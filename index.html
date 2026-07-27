@@ -866,7 +866,7 @@ async function stGet(key) {
 }
 async function stSet(key, val) {
   try { if(window.storage) { await window.storage.set(key,val); return; } } catch(e) {}
-  try { localStorage.setItem(key,val); } catch(e) {}
+  try { localStorage.setItem(key,val); } catch(e) { throw e; }
 }
 async function stDel(key) {
   try { if(window.storage) { await window.storage.delete(key); return; } } catch(e) {}
@@ -967,7 +967,7 @@ async function loadHist() {
       btnEdit.style.cssText='background:#EBF3FB;color:#2E75B6;border:1px solid #C5DFF5;border-radius:5px;padding:4px 9px;cursor:pointer;font-size:11px;font-family:inherit;white-space:nowrap';
       btnEdit.textContent='✏️ Editar';
       btnEdit.addEventListener('click', ev=>{ ev.stopPropagation(); editarHist(h); });
-      btnVer.title='Visualizar';
+      const btnVer=document.createElement('button');btnVer.title='Visualizar';
       btnVer.style.cssText='background:var(--gray1);color:var(--gray4);border:1px solid var(--gray2);border-radius:5px;padding:4px 9px;cursor:pointer;font-size:11px;font-family:inherit;white-space:nowrap';
       btnVer.textContent='👁 Ver';
       btnVer.addEventListener('click', ev=>{ ev.stopPropagation(); verHist(h); });
