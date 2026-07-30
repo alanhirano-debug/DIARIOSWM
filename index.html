@@ -195,6 +195,9 @@ body:not(.authed) #topbar,body:not(.authed) #sidebar,body:not(.authed) #main,bod
     Novo serviço
   </button>
   <div class="ndiv"></div>
+  <div class="nsec" id="nsec-fin" style="display:none">Serviços finalizados</div>
+  <div id="sl-fin"></div>
+  <div class="ndiv" id="ndiv-fin" style="display:none"></div>
   <div class="nsec" id="slb">Seções</div>
   <div class="nitem on" data-p="p0" onclick="ir('p0')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Informações gerais</div>
   <div class="nitem" data-p="p1" onclick="ir('p1')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>1. Equipe<span class="nbadge" id="b-eq">0</span></div>
@@ -1115,17 +1118,41 @@ function srvConfirmar() {
 }
 function srvRender() {
   const list=document.getElementById('sl'); list.innerHTML='';
-  servicos.forEach(s=>{
-    const div=document.createElement('div'); div.className='nitem'+(s.id===srvAtual?' on':''); div.dataset.id=s.id; div.style.paddingRight='6px';
-    const srvCliente = s.estado?.cliente || s.estado?.cli || '';
-    const srvLabel = srvCliente ? srvCliente + ' – ' + s.nome : s.nome;
-    const nm=document.createElement('span'); nm.style.cssText='flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'; nm.textContent=srvLabel;
-    const del=document.createElement('button'); del.style.cssText='background:none;border:none;color:'+(s.id===srvAtual?'#AB3234':'var(--gray3)')+';cursor:pointer;padding:2px 4px;border-radius:3px;font-size:11px;flex-shrink:0;line-height:1'; del.textContent='✕'; del.title='Remover';
-    del.addEventListener('click',ev=>{ev.stopPropagation();srvRemover(s.id);});
-    div.append(nm,del); div.addEventListener('click',()=>srvSelecionar(s.id)); list.appendChild(div);
+  const listFin=document.getElementById('sl-fin'); if(listFin) listFin.innerHTML='';
+  const ativos = servicos.filter(s=>!s.fin);
+  const finalizados = servicos.filter(s=>s.fin===true);
+  ativos.forEach(s=>{
+  const div=document.createElement('div'); div.className='nitem'+(s.id===srvAtual?' on':''); div.dataset.id=s.id; div.style.paddingRight='6px';
+  const srvCliente = s.estado?.cliente || s.estado?.cli || '';
+  const srvLabel = srvCliente ? srvCliente + ' – ' + s.nome : s.nome;
+  const nm=document.createElement('span'); nm.style.cssText='flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'; nm.textContent=srvLabel;
+  const fin=document.createElement('button'); fin.style.cssText='background:none;border:none;color:'+(s.id===srvAtual?'#AB3234':'var(--gray3)')+';cursor:pointer;padding:2px 4px;border-radius:3px;font-size:11px;flex-shrink:0;line-height:1'; fin.textContent='✓'; fin.title='Marcar como finalizado';
+  fin.addEventListener('click',ev=>{ev.stopPropagation();srvSetFinalizado(s.id,true);});
+  const del=document.createElement('button'); del.style.cssText='background:none;border:none;color:'+(s.id===srvAtual?'#AB3234':'var(--gray3)')+';cursor:pointer;padding:2px 4px;border-radius:3px;font-size:11px;flex-shrink:0;line-height:1'; del.textContent='✕'; del.title='Remover';
+  del.addEventListener('click',ev=>{ev.stopPropagation();srvRemover(s.id);});
+  div.append(nm,fin,del); div.addEventListener('click',()=>srvSelecionar(s.id)); list.appendChild(div);
   });
-}
-function srvCapturar() {
+  const nsecFin=document.getElementById('nsec-fin'); const ndivFin=document.getElementById('ndiv-fin');
+  if(finalizados.length){
+  if(nsecFin) nsecFin.style.display='';
+  if(ndivFin) ndivFin.style.display='';
+  finalizados.forEach(s=>{
+  const div=document.createElement('div'); div.className='nitem'; div.dataset.id=s.id; div.style.paddingRight='6px'; div.style.opacity='.7';
+  const srvCliente = s.estado?.cliente || s.estado?.cli || '';
+  const srvLabel = srvCliente ? srvCliente + ' – ' + s.nome : s.nome;
+  const nm=document.createElement('span'); nm.style.cssText='flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:line-through'; nm.textContent=srvLabel;
+  const reab=document.createElement('button'); reab.style.cssText='background:none;border:none;color:var(--gray3);cursor:pointer;padding:2px 4px;border-radius:3px;font-size:11px;flex-shrink:0;line-height:1'; reab.textContent='↩'; reab.title='Reabrir serviço';
+  reab.addEventListener('click',ev=>{ev.stopPropagation();srvSetFinalizado(s.id,false);});
+  const del=document.createElement('button'); del.style.cssText='background:none;border:none;color:var(--gray3);cursor:pointer;padding:2px 4px;border-radius:3px;font-size:11px;flex-shrink:0;line-height:1'; del.textContent='✕'; del.title='Remover';
+  del.addEventListener('click',ev=>{ev.stopPropagation();srvRemover(s.id);});
+  div.append(nm,reab,del); div.addEventListener('click',()=>srvSelecionar(s.id)); if(listFin) listFin.appendChild(div);
+  });
+  } else {
+  if(nsecFin) nsecFin.style.display='none';
+  if(ndivFin) ndivFin.style.display='none';
+  }
+  }
+  function srvCapturar() {
   const eq=[],sv=[],ep=[],ft=[];
   document.querySelectorAll('#eq-b tr').forEach(r=>{const i=r.querySelectorAll('input');eq.push({fn:i[0]?.value||'',qt:i[1]?.value||'1',ob:i[2]?.value||''});});
   document.querySelectorAll('#sv-b tr').forEach((r,i)=>{const inp=r.querySelectorAll('input');const sel=r.querySelector('select');sv.push({n:i+1,d:inp[0]?.value||'',l:inp[1]?.value||'',s:sel?.value||''});});
@@ -1205,10 +1232,23 @@ function srvRemover(id) {
   servicos=servicos.filter(x=>x.id!==id);
   if(srvAtual===id){srvAtual=null;document.getElementById('slb').textContent='Seções';if(servicos.length>0)srvSelecionar(servicos[0].id);}
   srvRender(); toast('Serviço removido.');
-}
+  }
+  function srvSetFinalizado(id, val) {
+  const s = servicos.find(x=>x.id===id); if(!s) return;
+  if(srvAtual===id){ s.estado = srvCapturar(); }
+  s.fin = !!val;
+  srvSalvarNuvem(s);
+  if(val && srvAtual===id){
+  srvAtual=null;
+  const prox = servicos.find(x=>x.id!==id && !x.fin);
+  if(prox){ srvSelecionar(prox.id); }
+  else { document.getElementById('slb').textContent='Seções'; document.getElementById('eq-b').innerHTML=''; document.getElementById('sv-b').innerHTML=''; document.getElementById('ep-b').innerHTML=''; document.getElementById('pgrid').innerHTML=''; }
+  }
+  srvRender();
+  toast(val ? 'Serviço "'+s.nome+'" finalizado!' : 'Serviço "'+s.nome+'" reaberto!', true);
+  }
 
-// ── RELATÓRIO ─────────────────────────────────────────────────────────────────
-function abrirRelatorio() {
+  function abrirRelatorio() {
   if(srvAtual){const cur=servicos.find(x=>x.id===srvAtual);if(cur){cur.estado=srvCapturar();srvSalvarNuvem(cur);}}
   const d=srvCapturar();
   const label=nomeArq();
@@ -1314,24 +1354,23 @@ function stripFotosEstado(estado) {
 }
 
 async function srvSalvarNuvem(s) {
-if (!s || !currentUid) return;
-try {
-await stSet('servico:'+s.id, JSON.stringify({nome:s.nome, estado:stripFotosEstado(s.estado)}));
-} catch(e) { console.error('srvSalvarNuvem erro', e); return; }
-window.__idxSaveChain = (window.__idxSaveChain || Promise.resolve()).then(async () => {
-try {
-const idxRaw = await stGet('servicos-idx');
-let idx = idxRaw ? JSON.parse(idxRaw) : [];
-const map = new Map();
-idx.forEach(x=>{ if(x && x.id) map.set(x.id, x); });
-map.set(s.id, {id:s.id, nome:s.nome});
-await stSet('servicos-idx', JSON.stringify(Array.from(map.values())));
-} catch(e2) { console.error('srvSalvarNuvem idx erro', e2); }
-});
-await window.__idxSaveChain;
-}
-
-async function srvRemoverNuvem(id) {
+  if (!s || !currentUid) return;
+  try {
+  await stSet('servico:'+s.id, JSON.stringify({nome:s.nome, estado:stripFotosEstado(s.estado), fin: !!s.fin}));
+  } catch(e) { console.error('srvSalvarNuvem erro', e); return; }
+  window.__idxSaveChain = (window.__idxSaveChain || Promise.resolve()).then(async () => {
+  try {
+  const idxRaw = await stGet('servicos-idx');
+  let idx = idxRaw ? JSON.parse(idxRaw) : [];
+  const map = new Map();
+  idx.forEach(x=>{ if(x && x.id) map.set(x.id, x); });
+  map.set(s.id, {id:s.id, nome:s.nome, fin: !!s.fin});
+  await stSet('servicos-idx', JSON.stringify(Array.from(map.values())));
+  } catch(e2) { console.error('srvSalvarNuvem idx erro', e2); }
+  });
+  await window.__idxSaveChain;
+  }
+  async function srvRemoverNuvem(id) {
   if (!currentUid) return;
   try {
     await stDel('servico:'+id);
@@ -1343,35 +1382,35 @@ async function srvRemoverNuvem(id) {
 }
 
 async function srvCarregarTodosNuvem() {
-try {
-const idxRaw = await stGet('servicos-idx');
-let idx = idxRaw ? JSON.parse(idxRaw) : [];
-const idxMap = new Map();
-idx.forEach(x=>{ if(x && x.id) idxMap.set(x.id, x); });
-idx = Array.from(idxMap.values());
-if (idxRaw) { try { const origLen = JSON.parse(idxRaw).length; if (origLen !== idx.length) await stSet('servicos-idx', JSON.stringify(idx)); } catch(eFix) {} }
-if (!idx.length) { iniciarAppPadrao(); return; }
-servicos.length = 0;
-const vistos = new Set();
-for (const item of idx) {
-if (vistos.has(item.id)) continue;
-vistos.add(item.id);
-const raw = await stGet('servico:'+item.id);
-if (raw) {
-const data = JSON.parse(raw);
-servicos.push({id:item.id, nome:data.nome, estado:data.estado});
-}
-}
-if (!servicos.length) { iniciarAppPadrao(); return; }
-srvRender();
-srvSelecionar(servicos[0].id);
-} catch(e) {
-console.error('srvCarregarTodosNuvem erro', e);
-iniciarAppPadrao();
-}
-}
-
-function iniciarAppPadrao() {
+  try {
+  const idxRaw = await stGet('servicos-idx');
+  let idx = idxRaw ? JSON.parse(idxRaw) : [];
+  const idxMap = new Map();
+  idx.forEach(x=>{ if(x && x.id) idxMap.set(x.id, x); });
+  idx = Array.from(idxMap.values());
+  if (idxRaw) { try { const origLen = JSON.parse(idxRaw).length; if (origLen !== idx.length) await stSet('servicos-idx', JSON.stringify(idx)); } catch(eFix) {} }
+  if (!idx.length) { iniciarAppPadrao(); return; }
+  servicos.length = 0;
+  const vistos = new Set();
+  for (const item of idx) {
+  if (vistos.has(item.id)) continue;
+  vistos.add(item.id);
+  const raw = await stGet('servico:'+item.id);
+  if (raw) {
+  const data = JSON.parse(raw);
+  servicos.push({id:item.id, nome:data.nome, estado:data.estado, fin: !!(item.fin||data.fin)});
+  }
+  }
+  if (!servicos.length) { iniciarAppPadrao(); return; }
+  srvRender();
+  const ativo = servicos.find(s=>!s.fin) || servicos[0];
+  srvSelecionar(ativo.id);
+  } catch(e) {
+  console.error('srvCarregarTodosNuvem erro', e);
+  iniciarAppPadrao();
+  }
+  }
+  function iniciarAppPadrao() {
   servicos.push({id:'srv0',nome:'Piso – P&G Rio Negro',estado:null});
   srvAtual='srv0';
   document.getElementById('slb').textContent='Piso – P&G Rio Negro';
