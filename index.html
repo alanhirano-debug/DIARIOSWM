@@ -1254,14 +1254,14 @@ function srvSelecionar(id) {
   if(s.estado){ const cl=s.estado.cliente||s.estado.cli||''; document.getElementById('slb').textContent = cl ? cl+' – '+s.nome : s.nome; }
   ir('p0');
 }
-function srvRemover(id) {
-  if(!confirm('Remover este serviço? Os dados serão perdidos.')) return;
-  srvRemoverNuvem(id);
-  servicos=servicos.filter(x=>x.id!==id);
-  if(srvAtual===id){srvAtual=null;document.getElementById('slb').textContent='Seções';if(servicos.length>0)srvSelecionar(servicos[0].id);}
-  srvRender(); toast('Serviço removido.');
-  }
-  function srvSetFinalizado(id, val) {
+async function srvRemover(id) {
+if(!confirm('Certeza que deseja apagar?')) return;
+await srvRemoverNuvem(id);
+servicos=servicos.filter(x=>x.id!==id);
+if(srvAtual===id){srvAtual=null;document.getElementById('slb').textContent='Seções';if(servicos.length>0)srvSelecionar(servicos[0].id);}
+srvRender(); toast('Serviço apagado. O histórico foi mantido.',true);
+}
+function srvSetFinalizado(id, val) {
   const s = servicos.find(x=>x.id===id); if(!s) return;
   if(srvAtual===id){ s.estado = srvCapturar(); }
   s.fin = !!val;
@@ -1399,16 +1399,18 @@ async function srvSalvarNuvem(s) {
   await window.__idxSaveChain;
   }
   async function srvRemoverNuvem(id) {
-  if (!currentUid) return;
-  try {
-    await stDel('servico:'+id);
-    const idxRaw = await stGet('servicos-idx');
-    let idx = idxRaw ? JSON.parse(idxRaw) : [];
-    idx = idx.filter(x=>x.id!==id);
-    await stSet('servicos-idx', JSON.stringify(idx));
-  } catch(e) { console.error('srvRemoverNuvem erro', e); }
+if (!currentUid) { try{localStorage.removeItem('servico:'+id);}catch(e){} return; }
+window.__idxSaveChain = (window.__idxSaveChain || Promise.resolve()).then(async () => {
+try {
+await stDel('servico:'+id);
+const idxRaw = await stGet('servicos-idx');
+let idx = idxRaw ? JSON.parse(idxRaw) : [];
+idx = idx.filter(x=>x.id!==id);
+await stSet('servicos-idx', JSON.stringify(idx));
+} catch(e) { console.error('srvRemoverNuvem erro', e); }
+});
+await window.__idxSaveChain;
 }
-
 async function srvCarregarTodosNuvem() {
   try {
   const idxRaw = await stGet('servicos-idx');
