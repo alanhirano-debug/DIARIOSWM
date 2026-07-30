@@ -651,6 +651,7 @@ async function saveSigStorage(nome, cargo, canvas) {
   return img;
 }
 async function carregarSigsStorage() {
+document.getElementById('sig-lista').innerHTML='';
   let loaded = false;
   try {
     const keys = await stList('sig:');
@@ -1313,15 +1314,21 @@ function stripFotosEstado(estado) {
 }
 
 async function srvSalvarNuvem(s) {
-  if (!s || !currentUid) return;
-  try {
-    await stSet('servico:'+s.id, JSON.stringify({nome:s.nome, estado:stripFotosEstado(s.estado)}));
-    const idxRaw = await stGet('servicos-idx');
-    let idx = idxRaw ? JSON.parse(idxRaw) : [];
-    idx = idx.filter(x=>x.id!==s.id);
-    idx.push({id:s.id, nome:s.nome});
-    await stSet('servicos-idx', JSON.stringify(idx));
-  } catch(e) { console.error('srvSalvarNuvem erro', e); }
+if (!s || !currentUid) return;
+try {
+await stSet('servico:'+s.id, JSON.stringify({nome:s.nome, estado:stripFotosEstado(s.estado)}));
+} catch(e) { console.error('srvSalvarNuvem erro', e); return; }
+window.__idxSaveChain = (window.__idxSaveChain || Promise.resolve()).then(async () => {
+try {
+const idxRaw = await stGet('servicos-idx');
+let idx = idxRaw ? JSON.parse(idxRaw) : [];
+const map = new Map();
+idx.forEach(x=>{ if(x && x.id) map.set(x.id, x); });
+map.set(s.id, {id:s.id, nome:s.nome});
+await stSet('servicos-idx', JSON.stringify(Array.from(map.values())));
+} catch(e2) { console.error('srvSalvarNuvem idx erro', e2); }
+});
+await window.__idxSaveChain;
 }
 
 async function srvRemoverNuvem(id) {
@@ -1336,25 +1343,32 @@ async function srvRemoverNuvem(id) {
 }
 
 async function srvCarregarTodosNuvem() {
-  try {
-    const idxRaw = await stGet('servicos-idx');
-    const idx = idxRaw ? JSON.parse(idxRaw) : [];
-    if (!idx.length) { iniciarAppPadrao(); return; }
-    servicos.length = 0;
-    for (const item of idx) {
-      const raw = await stGet('servico:'+item.id);
-      if (raw) {
-        const data = JSON.parse(raw);
-        servicos.push({id:item.id, nome:data.nome, estado:data.estado});
-      }
-    }
-    if (!servicos.length) { iniciarAppPadrao(); return; }
-    srvRender();
-    srvSelecionar(servicos[0].id);
-  } catch(e) {
-    console.error('srvCarregarTodosNuvem erro', e);
-    iniciarAppPadrao();
-  }
+try {
+const idxRaw = await stGet('servicos-idx');
+let idx = idxRaw ? JSON.parse(idxRaw) : [];
+const idxMap = new Map();
+idx.forEach(x=>{ if(x && x.id) idxMap.set(x.id, x); });
+idx = Array.from(idxMap.values());
+if (idxRaw) { try { const origLen = JSON.parse(idxRaw).length; if (origLen !== idx.length) await stSet('servicos-idx', JSON.stringify(idx)); } catch(eFix) {} }
+if (!idx.length) { iniciarAppPadrao(); return; }
+servicos.length = 0;
+const vistos = new Set();
+for (const item of idx) {
+if (vistos.has(item.id)) continue;
+vistos.add(item.id);
+const raw = await stGet('servico:'+item.id);
+if (raw) {
+const data = JSON.parse(raw);
+servicos.push({id:item.id, nome:data.nome, estado:data.estado});
+}
+}
+if (!servicos.length) { iniciarAppPadrao(); return; }
+srvRender();
+srvSelecionar(servicos[0].id);
+} catch(e) {
+console.error('srvCarregarTodosNuvem erro', e);
+iniciarAppPadrao();
+}
 }
 
 function iniciarAppPadrao() {
