@@ -1214,23 +1214,12 @@ function srvRestaurar(e) {
   document.getElementById('ep-b').innerHTML=''; (e.ep||[]).forEach(r=>aEp(r.nm,r.qt,r.sit));
   document.getElementById('pgrid').innerHTML='';
   (e.ft||[]).forEach(f=>{aFoto();if(f.src){const cards=document.querySelectorAll('.pcard');const last=cards[cards.length-1];if(last){const slot=last.querySelector('.pslot');const img=document.createElement('img');img.src=f.src;img.addEventListener('click',()=>{});if(slot){slot.innerHTML='';slot.appendChild(img);}const desc=last.querySelector('[data-desc]');if(desc)desc.value=f.desc||'';}}});
-  // Restore profissionais da p0
-  document.getElementById('prof-lista-p0').innerHTML='';
-  if(e.profs&&e.profs.length){
-    e.profs.forEach(p=>{
-      stGet('sig:'+p.nome).then(rv=>{
-        const img=rv?JSON.parse(rv).img:null;
-        profCriarCard(p.nome,p.cargo,img);
-      }).catch(()=>profCriarCard(p.nome,p.cargo,null));
-    });
-    setTimeout(profSync,100);
-  } else {
-    carregarSigsStorage();
-  }
+  // Restore profissionais (prof-lista-p0 nao existe nesta UI; usa sempre o sistema de assinaturas)
+  carregarSigsStorage();
   setTimeout(()=>{if(e.eng)document.getElementById('eng').value=e.eng;if(e.enc)document.getElementById('enc').value=e.enc;},200);
   upB();
-}
-function srvSelecionar(id) {
+  }
+  function srvSelecionar(id) {
   if(srvAtual){const cur=servicos.find(x=>x.id===srvAtual);if(cur){cur.estado=srvCapturar();srvSalvarNuvem(cur);}}
   srvAtual=id; const s=servicos.find(x=>x.id===id); if(!s) return;
   const slbCliente = s.estado?.cliente || s.estado?.cli || '';
@@ -1437,7 +1426,7 @@ async function srvCarregarTodosNuvem() {
   srvSelecionar(ativo.id);
   } catch(e) {
   console.error('srvCarregarTodosNuvem erro', e);
-  iniciarAppPadrao();
+  if (!servicos.length) { iniciarAppPadrao(); }
   }
   }
   function iniciarAppPadrao() {
